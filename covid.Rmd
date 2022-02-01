@@ -1,0 +1,67 @@
+---
+title: "Covid mutations"
+author: "Felix Barenys Marimon"
+date: "12/28/2021"
+output: html_document
+---
+
+
+The data was extracted from https://cov-lineages.org/lineage_list.html.
+
+Data Handling
+
+```{r message=FALSE, warning=FALSE}
+covid_rep<-read.csv("/Users/felixbarenysmarimon/Desktop/PROJECT/mutations covid/covid_variants.csv")
+covid_rep<-covid_rep[,c(-1,-2,-4,-6,-8,-10,-12,-14,-15,-16)]
+covid_rep$Earliest.date<-as.Date(covid_rep$Earliest.date)
+covid_rep<-covid_rep[order(covid_rep$Earliest.date),]
+
+#stablishing which are the worrying mutations
+worring<-c("B.1.351 ","P.1 ","B.1.617.2 ","B.1.1.529 ")
+covid_rep$worry<-"No"
+covid_rep$worry[which(is.element(covid_rep$Lineage,worring)==TRUE)]<-c("Beta","Gamma","Delta","Omicron")
+
+#stablish alpha for plot colour
+
+worring<-c("B.1.351 ","P.1 ","B.1.617.2 ","B.1.1.529 ")
+covid_rep$alpha<-0.1
+covid_rep$alpha[which(is.element(covid_rep$Lineage,worring)==TRUE)]<-1
+
+
+#Eliminate NA's
+covid_rep<-covid_rep[-which(is.na(covid_rep$Earliest.date)),]
+```
+
+Difference between days fo mutations
+
+```{r}
+covid_rep$diff_time<-c(0,as.numeric(diff.Date(covid_rep$Earliest.date)))
+hist(covid_rep$diff_ti,xlim=c(0,12),breaks=40,xlab="Difference between mutations",main="Histogram")
+```
+
+
+GGplot2
+
+```{r message=FALSE, warning=FALSE}
+library(plotly)
+library(tidyverse)
+library(htmlwidgets)
+scatterPlot <- covid_rep %>% 
+  ggplot(aes(x = Earliest.date, y = diff_time,text=paste(
+               "Description: ", Description, "\n",
+                "Most common countries: ", Most.common.countries, "\n",
+                          sep = ""
+               ))) + 
+  geom_point( aes(colour =worry,alpha=alpha )) + 
+    scale_color_manual(values = c("Beta"="green","Gamma"="orange","Delta"="red","Omicron"="blue","No"="black"))+
+labs(x = "Time", 
+       y = "days between variants",
+       title = "Covid variants") +
+theme_classic()
+```
+
+```{r message=FALSE, warning=FALSE}
+ggplotly(scatterPlot)
+```
+
+As we can see above, the time between mutations starts increase when vaccination of the population speeds up, which could indicate the end of the pandemy.
